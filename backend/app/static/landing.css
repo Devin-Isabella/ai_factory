@@ -1,22 +1,30 @@
-:root { --bg:#0f1115; --fg:#e7e9ee; --muted:#a7afc0; --card:#171a21; --brand:#7dd3fc; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; }
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; }
-.wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
-header { display:flex; align-items:center; gap:12px; }
-h1 { margin:8px 0 0; font-size: 28px; }
-.grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:12px; margin-top:12px; }
-.card { display:block; background: var(--card); border:1px solid #212634; border-radius:14px; padding:14px; text-decoration:none; color: var(--fg); }
-.card h2 { margin: 0 0 6px; font-size: 18px; }
-.card p { margin:0; color: var(--muted); }
-.pill { padding:6px 10px; border-radius:999px; font-size: 12px; border:1px solid #263044; }
-.pill-gray{ background:#151922; color:#cbd5e1; }
-.pill-green{ background:#062414; color:#86efac; border-color:#14532d; }
-.pill-red{ background:#2a0e10; color:#fecaca; border-color:#7f1d1d; }
-.pill-amber{ background:#2b1f09; color:#fde68a; border-color:#78350f; }
-label { display:block; margin: 8px 0; color: var(--muted); }
-input, button { width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2a3244; background:#0e1118; color:var(--fg); }
-button { background: #0b1622; border-color:#203145; cursor:pointer; }
-button:hover { background:#0e2031; }
-.code { background:#0b0f16; padding:10px; border-radius:10px; border:1px solid #222838; white-space:pre-wrap; word-break:break-all; }
-.foot { color:var(--muted); text-align:center; margin:20px 0 40px; font-size:13px; }
-a.card:hover { outline: 1px solid #2c3a55; }
+body {
+  font-family: Arial, sans-serif;
+  background: #f9f9f9;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  text-align: center;
+  padding: 60px;
+}
+
+h1 {
+  color: #2b6cb0;
+}
+
+button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: #2b6cb0;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1a4369;
+}
