@@ -10,12 +10,10 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      # 1) Check out the repo
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2) Optional: run Ruff but DO NOT fail the job
-      - name: Install Python + Ruff (for info only)
+      - name: Ruff (non-blocking)
         shell: powershell
         continue-on-error: true
         run: |
@@ -23,66 +21,28 @@ jobs:
           if ($LASTEXITCODE -ne 0) { choco install -y python --version=3.11.9 }
           python -m pip install --upgrade pip
           python -m pip install ruff==0.13.0
-
-      - name: Ruff lint (non-blocking)
-        shell: powershell
-        continue-on-error: true
-        run: |
-          ruff --version
           ruff check .
 
-      # 3) Deploy on this machine (the Windows self-hosted runner)
       - name: Deploy with Docker Compose
         shell: powershell
-        working-directory: ${{ github.workspace }}
         env:
           COMPOSE_HTTP_TIMEOUT: 200
         run: |
-          Write-Host "Ensuring PowerShell can run scripts in this session..."
-          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-
-          Write-Host "Docker version:"; docker --version
-          Write-Host "Compose version:"; docker compose version
-
-          Write-Host "Bringing services up (build if needed)..."
+          docker --version
+          docker compose version
           docker compose up -d --build
 
-          # Health check loop
           $api = "http://localhost:8000/health"
-          $deadline = (Get-Date).AddMinutes(3)
-          $ok = $false
+          $deadline = (Get-Date).AddMinutes(3); $ok=$false
           while((Get-Date) -lt $deadline){
             try {
               $resp = Invoke-WebRequest -Uri $api -TimeoutSec 6
-              if ($resp.StatusCode -eq 200 -and ($resp.Content -like "*ok*")) {
-                $ok = $true; break
-              }
+              if ($resp.StatusCode -eq 200 -and ($resp.Content -like "*ok*")) { $ok=$true; break }
             } catch {}
-            Start-Sleep -Seconds 3
+            Start-Sleep 3
           }
           if (-not $ok) {
-            Write-Error "Backend /health did not become OK in time."
             Write-Host "Recent backend logs:"; docker compose logs --tail 200 backend
-            exit 1
+            throw "Backend /health did not become OK."
           }
-
-          Write-Host "✅ Deploy finished; health is OK."
-
-      # 4) Post-deploy: show a few probe URLs for logs
-      - name: Probe endpoints (non-blocking)
-        shell: powershell
-        continue-on-error: true
-        run: |
-          foreach ($u in @(
-            "http://localhost:8000/health",
-            "http://localhost:8000/info",
-            "http://localhost:8000/openapi.json",
-            "http://localhost:8000/static/index.html"
-          )) {
-            try {
-              $r = Invoke-WebRequest -Uri $u -TimeoutSec 6
-              Write-Host "OK  $u  -> $($r.StatusCode)"
-            } catch {
-              Write-Host "MISS $u -> $($_.Exception.Message)"
-            }
-          }
+          Write-Host "✅ Deploy finished; health OK."
