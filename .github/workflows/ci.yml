@@ -6,13 +6,19 @@ on:
   pull_request:
 
 permissions:
-  contents: write  # allow the job to push auto-fixes back to the repo
+  contents: write
 
 jobs:
   lint-and-fix:
     name: Lint (Ruff) — auto-fix & push
     runs-on: self-hosted
+
     steps:
+      # --- IMPORTANT: allow PowerShell in THIS JOB only ---
+      - name: Allow PowerShell scripts for this job
+        shell: pwsh
+        run: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -24,39 +30,36 @@ jobs:
           python-version: "3.11"
 
       - name: Install ruff
+        shell: pwsh
         run: pip install ruff==0.13.0
 
-      - name: Run ruff (report only)
+      - name: Ruff (report only)
         id: report
+        shell: pwsh
         continue-on-error: true
         run: ruff --format=github .
 
-      - name: Auto-fix with ruff
+      - name: Ruff auto-fix
+        shell: pwsh
         run: ruff --fix .
 
       - name: Configure git for CI commit
+        shell: pwsh
         run: |
           git config user.name  "ci-bot"
           git config user.email "ci@example.com"
 
       - name: Commit fixes (if any)
+        shell: pwsh
         run: |
-          if git diff --quiet; then
+          if (git diff --quiet) {
             echo "No changes to commit."
-          else
+          } else {
             git add -A
             git commit -m "ci: ruff --fix auto-fixes"
             git push
-          fi
+          }
 
       - name: Final ruff (must be clean)
+        shell: pwsh
         run: ruff .
-
-  # (Optional) deploy job would go here, and you can gate it on lint-and-fix success:
-  # deploy:
-  #   needs: [lint-and-fix]
-  #   if: ${{ success() }}
-  #   runs-on: self-hosted
-  #   steps:
-  #     - name: Deploy script placeholder
-  #       run: echo "Deploy would run here."
