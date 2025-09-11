@@ -17,28 +17,28 @@ jobs:
           fetch-depth: 0
 
       - name: Ensure Python & Ruff
-        shell: powershell
+        shell: pwsh
         run: |
-          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
           python --version 2>$null
           if ($LASTEXITCODE -ne 0) { choco install -y python --version=3.11.9 }
           python -m pip install --upgrade pip
           python -m pip install ruff==0.13.0
 
       - name: Run ruff --fix (non-fatal)
-        shell: powershell
+        shell: pwsh
         continue-on-error: true
         run: |
-          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
           ruff --version
           ruff check --fix .
 
       - name: Commit & push if changed
-        shell: powershell
+        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
           git config user.name  "runner-bot"
           git config user.email "runner-bot@users.noreply.github.com"
           $changes = git status --porcelain
@@ -46,7 +46,7 @@ jobs:
             git add -A
             git commit -m "ci: ruff auto-fix"
             git push
-            Write-Host "Pushed ruff fixes."
+            Write-Host "✅ Pushed ruff fixes."
           } else {
-            Write-Host "No changes to commit."
+            Write-Host "ℹ️ No changes to commit."
           }
