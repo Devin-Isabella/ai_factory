@@ -34,6 +34,12 @@ jobs:
           $work = "${{ github.workspace }}"
           docker run --rm -v "$work:/src" -w "/src" python:3.11-alpine sh -lc "python -m compileall -q backend"
 
+      - name: Ruff lint (style & errors)
+        shell: powershell
+        run: |
+          $work = "${{ github.workspace }}"
+          docker run --rm -v "$work:/src" -w "/src" python:3.11-alpine sh -lc "pip install -q ruff && ruff check backend"
+
   deploy:
     name: Build & deploy (only if lint passed)
     runs-on: self-hosted
