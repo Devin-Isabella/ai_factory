@@ -2,10 +2,10 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.routes.bots import router as bots_router
 from app.routes.health import router as health_router
 from app.routes.info import router as info_router
-from app.routes.Metrics import router as metrics_router  # capital M to match file name
-from app.routes.bots import router as bots_router
+from app.routes.metrics import router as metrics_router
 
 app = FastAPI(title="AI Factory")
 
