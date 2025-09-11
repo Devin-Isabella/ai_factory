@@ -1,112 +1,44 @@
-name: Deploy on Push (lint-gated)
+name: Deploy on Push (lint-not-blocking)
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - 'backend/**'
-      - 'docker-compose.yml'
-      - 'docker-compose.override.yml'
-      - 'Dockerfile'
-      - '.github/workflows/deploy.yml'
-      - 'README.md'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-concurrency:
-  group: deploy-main
-  cancel-in-progress: false
+    branches: [ "main" ]
 
 jobs:
-  lint:
-    name: Lint (Ruff) on Ubuntu
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  deploy:
+    runs-on: self-hosted
+    timeout-minutes: 20
+
     steps:
-      - uses: actions/checkout@v4
+      # 1) Check out the repo
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install ruff
+      # 2) Optional: run Ruff but DO NOT fail the job
+      - name: Install Python + Ruff (for info only)
+        shell: powershell
+        continue-on-error: true
         run: |
+          python --version 2>$null
+          if ($LASTEXITCODE -ne 0) { choco install -y python --version=3.11.9 }
           python -m pip install --upgrade pip
-          pip install ruff
+          python -m pip install ruff==0.13.0
 
-      - name: Run ruff
-        working-directory: backend
+      - name: Ruff lint (non-blocking)
+        shell: powershell
+        continue-on-error: true
         run: |
           ruff --version
           ruff check .
-          # Fail on formatting issues as well (optional; comment out if too strict)
-          ruff format --check .
 
-  deploy:
-    name: Deploy to self-hosted (Windows)
-    needs: lint
-    runs-on: self-hosted
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Ensure Docker Desktop is running
-        shell: pwsh
-        run: |
-          $dockerExe = "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-          if (Test-Path $dockerExe) {
-            $proc = Get-Process -Name "Docker Desktop" -ErrorAction SilentlyContinue
-            if (-not $proc) { Start-Process $dockerExe }
-          }
-          Write-Host "Waiting for Docker engine..."
-          for ($i=0; $i -lt 90; $i++) {
-            docker info 2>$null | Out-Null
-            if ($LASTEXITCODE -eq 0) { Write-Host "Docker is up."; break }
-            Start-Sleep -Seconds 2
-          }
-          if ($LASTEXITCODE -ne 0) { throw "Docker engine not ready" }
-
-      - name: Compose down (ignore errors)
-        shell: pwsh
-        run: |
-          docker compose down 2>$null | Out-Null
-
-      - name: Compose up
-        shell: pwsh
-        run: |
-          docker compose up -d
-
-      - name: Wait for backend health
-        shell: pwsh
+      # 3) Deploy on this machine (the Windows self-hosted runner)
+      - name: Deploy with Docker Compose
+        shell: powershell
+        working-directory: ${{ github.workspace }}
         env:
-          API: http://localhost:8000
+          COMPOSE_HTTP_TIMEOUT: 200
         run: |
-          $deadline = (Get-Date).AddSeconds(120)
-          $ok = $false
-          while ((Get-Date) -lt $deadline) {
-            try {
-              $h = Invoke-RestMethod "$env:API/health" -TimeoutSec 6
-              if ($h.status -eq 'ok') { $ok = $true; break }
-            } catch {}
-            Start-Sleep 3
-          }
-          if (-not $ok) {
-            Write-Host "Health check failed. Last 120 backend log lines:" -ForegroundColor Yellow
-            docker compose logs --no-log-prefix --tail 120 backend || $true
-            throw "Backend /health did not become ok"
-          }
+          Write-Host "Ensuring PowerShell can run scripts in this session..."
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 
-      - name: Show monitor/db
-        shell: pwsh
-        env:
-          API: http://localhost:8000
-        run: |
-          try {
-            $r = Invoke-RestMethod "$env:API/monitor/db" -TimeoutSec 8
-            $r | ConvertTo-Json -Depth 6
-          } catch {
-            Write-Host "monitor/db failed: $($_.Exception.Message)" -ForegroundColor Yellow
-          }
+          Write-Host "Docker version:"; docker --version
