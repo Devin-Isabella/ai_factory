@@ -10,3 +10,5 @@ ignore = []
 quote-style = "preserve"
 indent-style = "space"
 line-ending = "auto"
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
