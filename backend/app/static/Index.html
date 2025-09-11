@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <title>AI Factory</title>
+    <link rel="stylesheet" href="/static/css/landing.css" />
+  </head>
+  <body>
+    <header class="wrap">
+      <div class="brand">
+        <span class="dot"></span>
+        <strong>AI&nbsp;Factory</strong>
+      </div>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/store">App&nbsp;Store</a>
+        <a href="/builder">Builder</a>
+        <a href="/docs" target="_blank" rel="noreferrer">API</a>
+      </nav>
+    </header>
+
+    <main class="wrap hero">
+      <h1>Build & launch AI assistants fast.</h1>
+      <p class="sub">
+        Start with templates, configure behavior & tone, and ship in minutes.
+      </p>
+      <div class="cta">
+        <a class="btn primary" href="/builder">Open Builder</a>
+        <a class="btn" href="/store">Browse App Store</a>
+      </div>
+
+      <section class="grid">
+        <div class="card">
+          <h3>Health</h3>
+          <pre id="health">checking…</pre>
+        </div>
+        <div class="card">
+          <h3>Info</h3>
+          <pre id="info">checking…</pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="wrap foot">
+      <span>© <span id="year"></span> AI Factory</span>
+    </footer>
+
+    <script src="/static/js/landing.js" defer></script>
+  </body>
+</html>
