@@ -19,6 +19,7 @@ jobs:
       - name: Ensure Python & Ruff
         shell: powershell
         run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
           python --version 2>$null
           if ($LASTEXITCODE -ne 0) { choco install -y python --version=3.11.9 }
           python -m pip install --upgrade pip
@@ -28,6 +29,7 @@ jobs:
         shell: powershell
         continue-on-error: true
         run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
           ruff --version
           ruff check --fix .
 
@@ -36,6 +38,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
           git config user.name  "runner-bot"
           git config user.email "runner-bot@users.noreply.github.com"
 
