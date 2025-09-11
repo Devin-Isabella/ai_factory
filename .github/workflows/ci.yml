@@ -1,0 +1,62 @@
+name: CI & Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: write  # allow the job to push auto-fixes back to the repo
+
+jobs:
+  lint-and-fix:
+    name: Lint (Ruff) — auto-fix & push
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install ruff==0.13.0
+
+      - name: Run ruff (report only)
+        id: report
+        continue-on-error: true
+        run: ruff --format=github .
+
+      - name: Auto-fix with ruff
+        run: ruff --fix .
+
+      - name: Configure git for CI commit
+        run: |
+          git config user.name  "ci-bot"
+          git config user.email "ci@example.com"
+
+      - name: Commit fixes (if any)
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit."
+          else
+            git add -A
+            git commit -m "ci: ruff --fix auto-fixes"
+            git push
+          fi
+
+      - name: Final ruff (must be clean)
+        run: ruff .
+
+  # (Optional) deploy job would go here, and you can gate it on lint-and-fix success:
+  # deploy:
+  #   needs: [lint-and-fix]
+  #   if: ${{ success() }}
+  #   runs-on: self-hosted
+  #   steps:
+  #     - name: Deploy script placeholder
+  #       run: echo "Deploy would run here."
