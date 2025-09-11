@@ -1,18 +1,78 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AI Factory</title>
-  <link rel="stylesheet" href="landing.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
 </head>
 <body>
-  <div class="container">
-    <h1>🚀 Welcome to AI Factory</h1>
-    <p>A platform to build, test, and publish AI-powered bots.</p>
-    <button id="testBtn">Click Me</button>
-  </div>
+  <header class="site-header">
+    <div class="wrap">
+      <div class="brand">
+        <img src="/static/logo.svg" alt="AI Factory logo" class="logo" />
+        <span class="brand-name">AI Factory</span>
+      </div>
+      <nav class="nav">
+        <a href="/builder" class="nav-link">Builder</a>
+        <a href="/store" class="nav-link">App Store</a>
+        <a href="/docs" class="nav-link" onclick="location.href='/openapi.json';return false;">API</a>
+      </nav>
+    </div>
+  </header>
 
-  <script src="Landing.js"></script>
+  <main class="hero">
+    <div class="wrap hero-content">
+      <h1>Build, test, and publish AI-powered bots</h1>
+      <p class="sub">
+        Your end-to-end platform for creating production-ready assistants. Start in the Builder,
+        then share to the App Store for testers and early adopters.
+      </p>
+      <div class="cta">
+        <a class="btn primary" href="/builder">Open Builder</a>
+        <a class="btn" href="/store">Browse App Store</a>
+      </div>
+
+      <div class="status">
+        <span id="health" class="badge">Checking health…</span>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© <span id="year"></span> AI Factory</span>
+      <span class="dot">•</span>
+      <a href="/health" target="_blank">Backend Health</a>
+    </div>
+  </footer>
+
+  <script>
+    // Year in footer
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Quick health check badge
+    (async () => {
+      try {
+        const r = await fetch('/health', { cache: 'no-store' });
+        const el = document.getElementById('health');
+        if (r.ok) {
+          el.textContent = 'Backend: OK';
+          el.classList.add('ok');
+        } else {
+          el.textContent = 'Backend: Error';
+          el.classList.add('warn');
+        }
+      } catch {
+        const el = document.getElementById('health');
+        el.textContent = 'Backend: Unreachable';
+        el.classList.add('warn');
+      }
+    })();
+  </script>
 </body>
 </html>
