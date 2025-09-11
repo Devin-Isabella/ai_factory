@@ -1,46 +1,25 @@
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
 
-# Routers
+# Routers (keep the ones you have; these are examples)
 from app.routes.info import router as info_router
 from app.routes.health import router as health_router
-try:
-    from app.routes.metrics import router as metrics_router
-except Exception:
-    metrics_router = None
+from app.routes.bots import router as bots_router
+from app.routes.metrics import router as metrics_router
 
 app = FastAPI(title="AI Factory")
 
-# Static assets
+# Serve /static -> backend/app/static (case-sensitive on Linux)
 app.mount("/static", StaticFiles(directory="backend/app/static"), name="static")
 
-# CORS (safe defaults; adjust if you add a separate frontend)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Landing page (root)
-@app.get("/", response_class=HTMLResponse)
+# Clean root: serve landing page (no OpenAPI entry)
+@app.get("/", include_in_schema=False)
 async def root():
     return FileResponse("backend/app/static/index.html")
 
-# Optional friendly shortcuts for static subpages
-@app.get("/builder", response_class=HTMLResponse)
-async def builder_page():
-    return FileResponse("backend/app/static/builder.html")
-
-@app.get("/store", response_class=HTMLResponse)
-async def store_page():
-    return FileResponse("backend/app/static/store.html")
-
-# API routes
+# API routers
 app.include_router(health_router)
 app.include_router(info_router)
-if metrics_router:
-    app.include_router(metrics_router)
+app.include_router(bots_router)
+app.include_router(metrics_router)
