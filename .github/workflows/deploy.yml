@@ -1,0 +1,78 @@
+name: Deploy on Push (lint-gated)
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main ]
+
+jobs:
+  lint:
+    name: Lint & validate
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show docker/compose versions
+        shell: powershell
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Validate docker-compose syntax
+        shell: powershell
+        run: |
+          if (Test-Path "docker-compose.override.yml") {
+            docker compose -p ai_factory -f docker-compose.yml -f docker-compose.override.yml config | Out-Null
+          } else {
+            docker compose -p ai_factory -f docker-compose.yml config | Out-Null
+          }
+
+      - name: Python syntax check (compileall via Docker python)
+        shell: powershell
+        run: |
+          $work = "${{ github.workspace }}"
+          docker run --rm -v "$work:/src" -w "/src" python:3.11-alpine sh -lc "python -m compileall -q backend"
+
+  deploy:
+    name: Build & deploy (only if lint passed)
+    runs-on: self-hosted
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compose down (remove orphans)
+        shell: powershell
+        run: |
+          if (Test-Path "docker-compose.override.yml") {
+            docker compose -p ai_factory -f docker-compose.yml -f docker-compose.override.yml down --remove-orphans
+          } else {
+            docker compose -p ai_factory -f docker-compose.yml down --remove-orphans
+          }
+
+      - name: Compose up (build + pull latest images)
+        shell: powershell
+        run: |
+          if (Test-Path "docker-compose.override.yml") {
+            docker compose -p ai_factory -f docker-compose.yml -f docker-compose.override.yml up -d --build
+          } else {
+            docker compose -p ai_factory -f docker-compose.yml up -d --build
+          }
+
+      - name: Health check
+        shell: powershell
+        run: |
+          $api = "http://localhost:8000/health"
+          $deadline = (Get-Date).AddSeconds(120)
+          $ok = $false
+          Write-Host "⏳ Waiting for $api ..."
+          while((Get-Date) -lt $deadline){
+            try {
+              $r = Invoke-RestMethod $api -TimeoutSec 6
+              if($r.status -eq 'ok'){ $ok=$true; break }
+            } catch {}
+            Start-Sleep 3
+          }
+          if(-not $ok){ throw "Backend /health did not become ok" }
+          Write-Host "✅ /health OK"
