@@ -42,3 +42,47 @@ jobs:
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 
           Write-Host "Docker version:"; docker --version
+          Write-Host "Compose version:"; docker compose version
+
+          Write-Host "Bringing services up (build if needed)..."
+          docker compose up -d --build
+
+          # Health check loop
+          $api = "http://localhost:8000/health"
+          $deadline = (Get-Date).AddMinutes(3)
+          $ok = $false
+          while((Get-Date) -lt $deadline){
+            try {
+              $resp = Invoke-WebRequest -Uri $api -TimeoutSec 6
+              if ($resp.StatusCode -eq 200 -and ($resp.Content -like "*ok*")) {
+                $ok = $true; break
+              }
+            } catch {}
+            Start-Sleep -Seconds 3
+          }
+          if (-not $ok) {
+            Write-Error "Backend /health did not become OK in time."
+            Write-Host "Recent backend logs:"; docker compose logs --tail 200 backend
+            exit 1
+          }
+
+          Write-Host "✅ Deploy finished; health is OK."
+
+      # 4) Post-deploy: show a few probe URLs for logs
+      - name: Probe endpoints (non-blocking)
+        shell: powershell
+        continue-on-error: true
+        run: |
+          foreach ($u in @(
+            "http://localhost:8000/health",
+            "http://localhost:8000/info",
+            "http://localhost:8000/openapi.json",
+            "http://localhost:8000/static/index.html"
+          )) {
+            try {
+              $r = Invoke-WebRequest -Uri $u -TimeoutSec 6
+              Write-Host "OK  $u  -> $($r.StatusCode)"
+            } catch {
+              Write-Host "MISS $u -> $($_.Exception.Message)"
+            }
+          }
