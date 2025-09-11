@@ -1,22 +1,16 @@
-name: CI & Deploy
+name: Lint (Ruff) — auto-fix & push
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-
-permissions:
-  contents: write
+  workflow_dispatch:
 
 jobs:
   lint-and-fix:
-    name: Lint (Ruff) — auto-fix & push
     runs-on: self-hosted
-
-    # Force classic Windows cmd for all run steps (avoids PowerShell policies)
     defaults:
       run:
-        shell: cmd
+        shell: bash   # force bash so GitHub doesn’t inject setup.ps1
 
     steps:
       - name: Checkout
@@ -30,27 +24,20 @@ jobs:
           python-version: "3.11"
 
       - name: Install ruff
-        run: python -m pip install ruff==0.13.0
-
-      # Report issues (won't fail the job yet)
-      - name: Ruff (report only)
-        id: report
-        continue-on-error: true
-        run: python -m ruff --format=github .
-
-      # Auto-fix what can be fixed
-      - name: Ruff auto-fix
-        run: python -m ruff --fix .
-
-      - name: Configure git for CI commit
         run: |
-          git config user.name  "ci-bot"
-          git config user.email "ci@example.com"
+          python -m pip install --upgrade pip
+          pip install ruff==0.13.0
 
-      - name: Commit fixes (if any)
+      - name: Lint & auto-fix
         run: |
-          git diff --quiet || (git add -A && git commit -m "ci: ruff --fix auto-fixes" && git push)
-
-      # Now enforce clean lint
-      - name: Final ruff (must be clean)
-        run: python -m ruff .
+          ruff --version
+          ruff check . --fix
+          if ! git diff --quiet; then
+            git config user.name  "ci-bot"
+            git config user.email "ci-bot@users.noreply.github.com"
+            git add -A
+            git commit -m "ci: ruff auto-fix"
+            git push
+          else
+            echo "No changes after ruff --fix"
+          fi
