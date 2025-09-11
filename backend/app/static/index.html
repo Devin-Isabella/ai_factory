@@ -4,43 +4,51 @@
     <meta charset="utf-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
     />
     <title>AI Factory</title>
-    <link rel="stylesheet" href="/static/landing.css" />
-    <style>
-      /* Safety fallback if CSS fails to load */
-      body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0f19; color:#e6e8ef; }
-      .wrap { min-height:100svh; display:grid; place-items:center; padding:48px 16px; }
-      .card { max-width:860px; width:100%; background:#11162a; border:1px solid #1f2a44; border-radius:16px; padding:28px; box-shadow:0 8px 24px rgba(0,0,0,.35); }
-      .row { display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
-      .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px; text-decoration:none; color:#0b0f19; background:#7dd3fc; font-weight:600; }
-      .btn.secondary { background:#94a3b8; color:#0b0f19; }
-      code { background:#0b1222; border:1px solid #1f2a44; padding:2px 6px; border-radius:6px; }
-    </style>
+    <link rel="stylesheet" href="/static/css/landing.css" />
   </head>
   <body>
-    <div class="wrap">
-      <div class="card">
-        <h1>AI Factory</h1>
-        <p>BuilderBot & AppStore are on this server. If you see this page, the backend is running and static files are mounted.</p>
-
-        <div class="row">
-          <a class="btn" href="/health">Health</a>
-          <a class="btn secondary" href="/openapi.json">OpenAPI</a>
-          <a class="btn" href="/info">Info</a>
-          <a class="btn secondary" href="/monitor/db">DB Check</a>
-        </div>
-
-        <h3 style="margin-top:20px">Troubleshooting</h3>
-        <ul>
-          <li>JS URL must be <code>/static/Landing.js</code> (capital L).</li>
-          <li>CSS URL must be <code>/static/landing.css</code>.</li>
-        </ul>
+    <header class="wrap">
+      <div class="brand">
+        <span class="dot"></span>
+        <strong>AI&nbsp;Factory</strong>
       </div>
-    </div>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/store">App&nbsp;Store</a>
+        <a href="/builder">Builder</a>
+        <a href="/docs" target="_blank" rel="noreferrer">API</a>
+      </nav>
+    </header>
 
-    <!-- Exact casing matters on Linux -->
-    <script src="/static/Landing.js" defer></script>
+    <main class="wrap hero">
+      <h1>Build & launch AI assistants fast.</h1>
+      <p class="sub">
+        Start with templates, configure behavior & tone, and ship in minutes.
+      </p>
+      <div class="cta">
+        <a class="btn primary" href="/builder">Open Builder</a>
+        <a class="btn" href="/store">Browse App Store</a>
+      </div>
+
+      <section class="grid">
+        <div class="card">
+          <h3>Health</h3>
+          <pre id="health">checking…</pre>
+        </div>
+        <div class="card">
+          <h3>Info</h3>
+          <pre id="info">checking…</pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="wrap foot">
+      <span>© <span id="year"></span> AI Factory</span>
+    </footer>
+
+    <script src="/static/js/landing.js" defer></script>
   </body>
 </html>
