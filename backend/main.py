@@ -42,3 +42,17 @@ async def spa_fallback(request: Request, call_next):
 
     # Pass through for known API/static/docs
     if path == "/" or path in DOC_PATHS or path.startswith(API_PREFIXES):
+        return await call_next(request)
+
+    # If the file exists under /static, let StaticFiles handle it
+    candidate = STATIC_DIR / path.lstrip("/")
+    if candidate.exists() and candidate.is_file():
+        return await call_next(request)
+
+    # Otherwise serve the SPA entry (index.html)
+    if INDEX_FILE.exists():
+        return FileResponse(str(INDEX_FILE), media_type="text/html")
+
+    # If index.html somehow missing, return clear JSON instead of generic 404
+    return JSONResponse({"detail": "landing index.html missing"}, status_code=500)
+# ---------------------------------------------------------------------------
