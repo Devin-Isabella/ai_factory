@@ -1,0 +1,9 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+select = ["E", "F", "I"]     # pycodestyle errors, pyflakes, import order
+ignore = []
+exclude = ["venv", ".venv", "node_modules", "dist", "build"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
