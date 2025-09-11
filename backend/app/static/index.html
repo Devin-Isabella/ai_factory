@@ -1,72 +1,46 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Factory — Builder & Bot Store</title>
-  <meta name="description" content="Build, test, and publish your AI bots. Explore the Bot Store for ready-to-use assistants." />
-  <link rel="icon" href="/static/favicon.ico" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/landing.css" />
-</head>
-<body>
-  <header class="site-header">
-    <div class="container row between center">
-      <a class="brand" href="/">🤖 AI Factory</a>
-      <nav class="nav">
-        <a href="/docs">Docs</a>
-        <a href="/health" target="_blank" rel="noopener">Status</a>
-        <a class="btn" href="/builder">Open Builder</a>
-      </nav>
-    </div>
-  </header>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <title>AI Factory</title>
+    <link rel="stylesheet" href="/static/landing.css" />
+    <style>
+      /* Safety fallback if CSS fails to load */
+      body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0f19; color:#e6e8ef; }
+      .wrap { min-height:100svh; display:grid; place-items:center; padding:48px 16px; }
+      .card { max-width:860px; width:100%; background:#11162a; border:1px solid #1f2a44; border-radius:16px; padding:28px; box-shadow:0 8px 24px rgba(0,0,0,.35); }
+      .row { display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
+      .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px; text-decoration:none; color:#0b0f19; background:#7dd3fc; font-weight:600; }
+      .btn.secondary { background:#94a3b8; color:#0b0f19; }
+      code { background:#0b1222; border:1px solid #1f2a44; padding:2px 6px; border-radius:6px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>AI Factory</h1>
+        <p>BuilderBot & AppStore are on this server. If you see this page, the backend is running and static files are mounted.</p>
 
-  <main>
-    <section class="hero">
-      <div class="container">
-        <h1>Build bots. Ship faster.</h1>
-        <p class="lead">
-          A simple way to create, test, and publish AI assistants — then list them in the Bot Store.
-        </p>
-        <div class="cta">
-          <a class="btn primary" href="/builder">Start Building</a>
-          <a class="btn" href="/store">Browse Bot Store</a>
+        <div class="row">
+          <a class="btn" href="/health">Health</a>
+          <a class="btn secondary" href="/openapi.json">OpenAPI</a>
+          <a class="btn" href="/info">Info</a>
+          <a class="btn secondary" href="/monitor/db">DB Check</a>
         </div>
-        <div class="hero-stats" id="hero-stats">
-          <!-- populated by Landing.js -->
-        </div>
-      </div>
-    </section>
 
-    <section class="features container grid-3">
-      <article>
-        <h3>Visual Builder</h3>
-        <p>Compose tools, prompts, and flows with guardrails. Versioning built-in.</p>
-      </article>
-      <article>
-        <h3>Observability</h3>
-        <p>Health, metrics, and request traces so you can ship confidently.</p>
-      </article>
-      <article>
-        <h3>One-click Publish</h3>
-        <p>List in the Bot Store with ratings, usage stats, and updates.</p>
-      </article>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="container row between center">
-      <span>© <span id="year"></span> AI Factory</span>
-      <div class="row gap">
-        <a href="mailto:support@example.com">Support</a>
-        <a href="/terms">Terms</a>
-        <a href="/privacy">Privacy</a>
+        <h3 style="margin-top:20px">Troubleshooting</h3>
+        <ul>
+          <li>JS URL must be <code>/static/Landing.js</code> (capital L).</li>
+          <li>CSS URL must be <code>/static/landing.css</code>.</li>
+        </ul>
       </div>
     </div>
-  </footer>
 
-  <script src="/static/Landing.js" defer></script>
-</body>
+    <!-- Exact casing matters on Linux -->
+    <script src="/static/Landing.js" defer></script>
+  </body>
 </html>
