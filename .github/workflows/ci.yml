@@ -1,18 +1,24 @@
-name: Lint (Ruff) — auto-fix & push
+name: CI & Deploy
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
+  pull_request:
+
+permissions:
+  contents: write
 
 jobs:
   lint-and-fix:
+    name: Lint (Ruff) — auto-fix & push
     runs-on: self-hosted
-    defaults:
-      run:
-        shell: bash   # force bash so GitHub doesn’t inject setup.ps1
 
     steps:
+      # Use classic Windows PowerShell (since pwsh isn't installed)
+      - name: Allow PowerShell scripts for this job
+        shell: powershell
+        run: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -24,20 +30,39 @@ jobs:
           python-version: "3.11"
 
       - name: Install ruff
-        run: |
-          python -m pip install --upgrade pip
-          pip install ruff==0.13.0
+        shell: powershell
+        run: python -m pip install ruff==0.13.0
 
-      - name: Lint & auto-fix
+      # Report any issues (but don't fail yet)
+      - name: Ruff (report only)
+        id: report
+        shell: powershell
+        continue-on-error: true
+        run: python -m ruff --format=github .
+
+      # Auto-fix what can be fixed
+      - name: Ruff auto-fix
+        shell: powershell
+        run: python -m ruff --fix .
+
+      - name: Configure git for CI commit
+        shell: powershell
         run: |
-          ruff --version
-          ruff check . --fix
-          if ! git diff --quiet; then
-            git config user.name  "ci-bot"
-            git config user.email "ci-bot@users.noreply.github.com"
+          git config user.name  "ci-bot"
+          git config user.email "ci@example.com"
+
+      - name: Commit fixes (if any)
+        shell: powershell
+        run: |
+          if (git diff --quiet) {
+            Write-Host "No changes to commit."
+          } else {
             git add -A
-            git commit -m "ci: ruff auto-fix"
+            git commit -m "ci: ruff --fix auto-fixes"
             git push
-          else
-            echo "No changes after ruff --fix"
-          fi
+          }
+
+      # Now enforce clean lint
+      - name: Final ruff (must be clean)
+        shell: powershell
+        run: python -m ruff .
