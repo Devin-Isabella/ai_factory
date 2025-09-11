@@ -13,12 +13,12 @@ jobs:
     name: Lint (Ruff) — auto-fix & push
     runs-on: self-hosted
 
-    steps:
-      # Use classic Windows PowerShell (since pwsh isn't installed)
-      - name: Allow PowerShell scripts for this job
-        shell: powershell
-        run: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+    # Force classic Windows cmd for all run steps (avoids PowerShell policies)
+    defaults:
+      run:
+        shell: cmd
 
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -30,39 +30,27 @@ jobs:
           python-version: "3.11"
 
       - name: Install ruff
-        shell: powershell
         run: python -m pip install ruff==0.13.0
 
-      # Report any issues (but don't fail yet)
+      # Report issues (won't fail the job yet)
       - name: Ruff (report only)
         id: report
-        shell: powershell
         continue-on-error: true
         run: python -m ruff --format=github .
 
       # Auto-fix what can be fixed
       - name: Ruff auto-fix
-        shell: powershell
         run: python -m ruff --fix .
 
       - name: Configure git for CI commit
-        shell: powershell
         run: |
           git config user.name  "ci-bot"
           git config user.email "ci@example.com"
 
       - name: Commit fixes (if any)
-        shell: powershell
         run: |
-          if (git diff --quiet) {
-            Write-Host "No changes to commit."
-          } else {
-            git add -A
-            git commit -m "ci: ruff --fix auto-fixes"
-            git push
-          }
+          git diff --quiet || (git add -A && git commit -m "ci: ruff --fix auto-fixes" && git push)
 
       # Now enforce clean lint
       - name: Final ruff (must be clean)
-        shell: powershell
         run: python -m ruff .
