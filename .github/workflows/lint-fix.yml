@@ -1,0 +1,50 @@
+name: Lint (Ruff) — auto-fix & push
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+jobs:
+  lint_fix:
+    runs-on: self-hosted
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure Python & Ruff
+        shell: powershell
+        run: |
+          python --version 2>$null
+          if ($LASTEXITCODE -ne 0) { choco install -y python --version=3.11.9 }
+          python -m pip install --upgrade pip
+          python -m pip install ruff==0.13.0
+
+      - name: Run ruff --fix (non-fatal)
+        shell: powershell
+        continue-on-error: true
+        run: |
+          ruff --version
+          ruff check --fix .
+
+      - name: Commit & push if changed
+        shell: powershell
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name  "runner-bot"
+          git config user.email "runner-bot@users.noreply.github.com"
+
+          $changes = git status --porcelain
+          if ($changes) {
+            git add -A
+            git commit -m "ci: ruff auto-fix"
+            git push
+            Write-Host "Pushed ruff fixes."
+          } else {
+            Write-Host "No changes to commit."
+          }
