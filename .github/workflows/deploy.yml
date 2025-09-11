@@ -1,84 +1,112 @@
 name: Deploy on Push (lint-gated)
 
 on:
-  workflow_dispatch: {}
   push:
     branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'docker-compose.yml'
+      - 'docker-compose.override.yml'
+      - 'Dockerfile'
+      - '.github/workflows/deploy.yml'
+      - 'README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
 
 jobs:
   lint:
-    name: Lint & validate
-    runs-on: self-hosted
+    name: Lint (Ruff) on Ubuntu
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Show docker/compose versions
-        shell: powershell
-        run: |
-          docker --version
-          docker compose version
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      - name: Validate docker-compose syntax
-        shell: powershell
+      - name: Install ruff
         run: |
-          if (Test-Path "docker-compose.override.yml") {
-            docker compose -p ai_factory -f docker-compose.yml -f docker-compose.override.yml config | Out-Null
-          } else {
-            docker compose -p ai_factory -f docker-compose.yml config | Out-Null
-          }
+          python -m pip install --upgrade pip
+          pip install ruff
 
-      - name: Python syntax check (compileall via Docker python)
-        shell: powershell
+      - name: Run ruff
+        working-directory: backend
         run: |
-          $work = "${{ github.workspace }}"
-          docker run --rm -v "$work:/src" -w "/src" python:3.11-alpine sh -lc "python -m compileall -q backend"
-
-      - name: Ruff lint (style & errors)
-        shell: powershell
-        run: |
-          $work = "${{ github.workspace }}"
-          docker run --rm -v "$work:/src" -w "/src" python:3.11-alpine sh -lc "pip install -q ruff && ruff check backend"
+          ruff --version
+          ruff check .
+          # Fail on formatting issues as well (optional; comment out if too strict)
+          ruff format --check .
 
   deploy:
-    name: Build & deploy (only if lint passed)
-    runs-on: self-hosted
+    name: Deploy to self-hosted (Windows)
     needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Compose down (remove orphans)
-        shell: powershell
+      - name: Ensure Docker Desktop is running
+        shell: pwsh
         run: |
-          if (Test-Path "docker-compose.override.yml") {
-            docker compose -p ai_factory -f docker-compose.yml -f docker-compose.override.yml down --remove-orphans
-          } else {
-            docker compose -p ai_factory -f docker-compose.yml down --remove-orphans
+          $dockerExe = "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+          if (Test-Path $dockerExe) {
+            $proc = Get-Process -Name "Docker Desktop" -ErrorAction SilentlyContinue
+            if (-not $proc) { Start-Process $dockerExe }
           }
-
-      - name: Compose up (build + pull latest images)
-        shell: powershell
-        run: |
-          if (Test-Path "docker-compose.override.yml") {
-            docker compose -p ai_factory -f docker-compose.yml -f docker-compose.override.yml up -d --build
-          } else {
-            docker compose -p ai_factory -f docker-compose.yml up -d --build
+          Write-Host "Waiting for Docker engine..."
+          for ($i=0; $i -lt 90; $i++) {
+            docker info 2>$null | Out-Null
+            if ($LASTEXITCODE -eq 0) { Write-Host "Docker is up."; break }
+            Start-Sleep -Seconds 2
           }
+          if ($LASTEXITCODE -ne 0) { throw "Docker engine not ready" }
 
-      - name: Health check
-        shell: powershell
+      - name: Compose down (ignore errors)
+        shell: pwsh
         run: |
-          $api = "http://localhost:8000/health"
+          docker compose down 2>$null | Out-Null
+
+      - name: Compose up
+        shell: pwsh
+        run: |
+          docker compose up -d
+
+      - name: Wait for backend health
+        shell: pwsh
+        env:
+          API: http://localhost:8000
+        run: |
           $deadline = (Get-Date).AddSeconds(120)
           $ok = $false
-          Write-Host "⏳ Waiting for $api ..."
-          while((Get-Date) -lt $deadline){
+          while ((Get-Date) -lt $deadline) {
             try {
-              $r = Invoke-RestMethod $api -TimeoutSec 6
-              if($r.status -eq 'ok'){ $ok=$true; break }
+              $h = Invoke-RestMethod "$env:API/health" -TimeoutSec 6
+              if ($h.status -eq 'ok') { $ok = $true; break }
             } catch {}
             Start-Sleep 3
           }
-          if(-not $ok){ throw "Backend /health did not become ok" }
-          Write-Host "✅ /health OK"
+          if (-not $ok) {
+            Write-Host "Health check failed. Last 120 backend log lines:" -ForegroundColor Yellow
+            docker compose logs --no-log-prefix --tail 120 backend || $true
+            throw "Backend /health did not become ok"
+          }
+
+      - name: Show monitor/db
+        shell: pwsh
+        env:
+          API: http://localhost:8000
+        run: |
+          try {
+            $r = Invoke-RestMethod "$env:API/monitor/db" -TimeoutSec 8
+            $r | ConvertTo-Json -Depth 6
+          } catch {
+            Write-Host "monitor/db failed: $($_.Exception.Message)" -ForegroundColor Yellow
+          }
