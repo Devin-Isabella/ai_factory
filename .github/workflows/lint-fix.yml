@@ -16,33 +16,35 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ensure Python & Ruff
-        shell: pwsh
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ruff
+        shell: powershell
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-          python --version 2>$null
-          if ($LASTEXITCODE -ne 0) { choco install -y python --version=3.11.9 }
           python -m pip install --upgrade pip
           python -m pip install ruff==0.13.0
+          ruff --version
 
       - name: Run ruff --fix (non-fatal)
-        shell: pwsh
+        shell: powershell
         continue-on-error: true
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-          ruff --version
           ruff check --fix .
 
       - name: Commit & push if changed
-        shell: pwsh
+        shell: powershell
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
           git config user.name  "runner-bot"
           git config user.email "runner-bot@users.noreply.github.com"
-          $changes = git status --porcelain
-          if ($changes) {
+          if (git status --porcelain) {
             git add -A
             git commit -m "ci: ruff auto-fix"
             git push
